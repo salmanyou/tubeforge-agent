@@ -1,0 +1,20 @@
+{
+  "channel": {
+    "niche": "original cinematic pop and alternative music with lyric videos — songs about love, heartbreak, hope, and personal transformation",
+    "audience": "listeners who discover new independent artists through emotionally resonant, story-driven songs — people drawn to lyric videos and cinematic production over generic pop",
+    "brandVoice": "emotional, cinematic, intimate — metadata should feel like it belongs to a song, not a generic upload. No hype language, no clickbait. Lean into the actual feeling/story of each track."
+  },
+  "automation": {
+    "maxVideosPerRun": 5,
+    "minScoreGainToApply": 8,
+    "rateLimitDaysPerVideo": 7,
+    "requireHumanReviewAboveTitleChangePercent": 60,
+    "dryRun": false
+  },
+  "limits": {
+    "titleMaxChars": 95,
+    "descriptionMinWords": 150,
+    "tagsMaxTotalChars": 460,
+    "tagsMax": 15
+  }
+}

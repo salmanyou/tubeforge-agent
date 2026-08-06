@@ -1,0 +1,20 @@
+{
+  "name": "tubeforge-agent",
+  "version": "1.0.0",
+  "description": "Autonomous metadata-optimization agent for a YouTube channel — reads real performance data, generates improved titles/descriptions/tags, and applies them via the YouTube Data API with built-in safety gates.",
+  "type": "commonjs",
+  "main": "src/agent.js",
+  "scripts": {
+    "authorize": "node scripts/authorize.js",
+    "agent": "node src/agent.js",
+    "agent:dry": "cross-env DRY_RUN=true node src/agent.js"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.5",
+    "googleapis": "^140.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

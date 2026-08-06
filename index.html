@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tube Forge — YouTube Growth Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0A0D12;
+  --panel:#12161F;
+  --panel-2:#181E29;
+  --border:#262E3B;
+  --border-soft:#1D2431;
+  --text:#E8ECF2;
+  --text-dim:#8D97A8;
+  --text-faint:#5B6472;
+  --amber:#F5B942;
+  --amber-dim:#8A6A2E;
+  --cyan:#48D9CF;
+  --cyan-dim:#2C6F6A;
+  --coral:#F2586A;
+  --coral-dim:#7A2E38;
+  --mono:'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans:'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.5;
+  min-height:100vh;
+}
+#app{max-width:1180px;margin:0 auto;padding:20px 20px 60px;}
+
+/* header */
+.header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:18px;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{width:38px;height:38px;border:2px solid var(--amber);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;color:var(--amber);font-size:13px;flex-shrink:0;}
+.brand-text h1{font-family:var(--mono);font-size:16px;font-weight:700;margin:0;letter-spacing:0.5px;}
+.brand-text p{margin:1px 0 0;font-size:11.5px;color:var(--text-dim);}
+.channel-chip{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 12px 6px 6px;}
+.channel-chip img{width:30px;height:30px;border-radius:50%;object-fit:cover;}
+.channel-chip .ct{display:flex;flex-direction:column;}
+.channel-chip .cname{font-size:12.5px;font-weight:600;}
+.channel-chip .cstats{font-size:10.5px;color:var(--text-dim);font-family:var(--mono);}
+.channel-chip.empty{color:var(--text-faint);font-size:12px;padding:8px 14px;}
+
+/* nav */
+.tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
+.tab-btn{background:none;border:none;color:var(--text-dim);font-family:var(--sans);font-weight:600;font-size:13px;padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:.15s;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--amber);border-bottom-color:var(--amber);}
+.tab{display:none;animation:fade .25s ease;}
+.tab.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+/* layout bits */
+.grid{display:grid;gap:16px;}
+.grid-2{grid-template-columns:1fr 1fr;}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+@media(max-width:760px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.card h2{font-family:var(--mono);font-size:14px;margin:0 0 4px;letter-spacing:.3px;}
+.card h2 .num{color:var(--amber);margin-right:6px;}
+.card .sub{font-size:12px;color:var(--text-dim);margin:0 0 14px;}
+.hint{font-size:11.5px;color:var(--text-faint);margin-top:6px;line-height:1.5;}
+
+label{display:block;font-size:11.5px;font-weight:600;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input[type=text],input[type=password],textarea,select{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);
+  font-family:var(--sans);font-size:13.5px;padding:9px 11px;outline:none;
+}
+input[type=text]:focus,input[type=password]:focus,textarea:focus,select:focus{border-color:var(--amber);}
+textarea{resize:vertical;min-height:70px;}
+.field{margin-bottom:14px;}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.row>*{flex:1;min-width:160px;}
+
+button.btn{
+  background:var(--amber);color:#1A1305;border:none;border-radius:6px;font-family:var(--sans);
+  font-weight:700;font-size:13px;padding:10px 16px;cursor:pointer;transition:.15s;white-space:nowrap;
+}
+button.btn:hover{filter:brightness(1.08);}
+button.btn:disabled{opacity:.45;cursor:not-allowed;}
+button.btn.ghost{background:none;border:1px solid var(--border);color:var(--text);}
+button.btn.ghost:hover{border-color:var(--cyan);color:var(--cyan);}
+button.btn.small{padding:6px 10px;font-size:11.5px;}
+button.btn.cyan{background:var(--cyan);color:#062522;}
+
+.msg{font-size:12.5px;border-radius:6px;padding:9px 12px;margin-top:10px;display:none;}
+.msg.show{display:block;}
+.msg.err{background:rgba(242,88,106,.1);border:1px solid var(--coral-dim);color:#FF9FAC;}
+.msg.ok{background:rgba(72,217,207,.08);border:1px solid var(--cyan-dim);color:var(--cyan);}
+.msg.info{background:rgba(245,185,66,.08);border:1px solid var(--amber-dim);color:var(--amber);}
+
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:currentColor;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px;margin-right:6px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+/* console */
+.console{background:#05070A;border:1px solid var(--border);border-radius:8px;padding:14px;font-family:var(--mono);font-size:12px;max-height:340px;overflow-y:auto;line-height:1.7;}
+.console .line{white-space:pre-wrap;word-break:break-word;}
+.console .tag{color:var(--cyan);}
+.console .tag.warn{color:var(--amber);}
+.console .tag.err{color:var(--coral);}
+.console .tag.ok{color:var(--cyan);}
+.console .dim{color:var(--text-faint);}
+.console:empty::before{content:"Idle — press \"Run Full Analysis\" to start the agent pipeline.";color:var(--text-faint);}
+
+/* gauge */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;}
+.gauge-num{font-family:var(--mono);font-weight:700;font-size:26px;margin-top:-8px;}
+.gauge-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.6px;margin-top:2px;}
+
+/* tags/pills */
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:11.5px;font-family:var(--mono);color:var(--text-dim);margin:2px 3px 2px 0;}
+.pill.copyable{cursor:pointer;}
+.pill.copyable:hover{border-color:var(--cyan);color:var(--cyan);}
+.score-badge{font-family:var(--mono);font-weight:700;font-size:12px;padding:2px 8px;border-radius:4px;display:inline-block;}
+.score-badge.good{background:rgba(72,217,207,.12);color:var(--cyan);}
+.score-badge.mid{background:rgba(245,185,66,.12);color:var(--amber);}
+.score-badge.low{background:rgba(242,88,106,.12);color:var(--coral);}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{text-align:left;color:var(--text-dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;border-bottom:1px solid var(--border);}
+td{padding:9px 10px;border-bottom:1px solid var(--border-soft);vertical-align:middle;}
+tr.vrow{cursor:pointer;}
+tr.vrow:hover td{background:var(--panel-2);}
+.vtitle{display:flex;align-items:center;gap:10px;}
+.vtitle img{width:64px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#000;}
+.vtitle .tt{font-weight:600;font-size:12.5px;max-width:340px;}
+.vmeta{font-size:11px;color:var(--text-faint);font-family:var(--mono);}
+
+/* notes list */
+.notes{list-style:none;padding:0;margin:10px 0 0;}
+.notes li{font-size:12px;color:var(--text-dim);padding:5px 0 5px 16px;position:relative;border-bottom:1px solid var(--border-soft);}
+.notes li:last-child{border-bottom:none;}
+.notes li::before{content:"—";position:absolute;left:0;color:var(--text-faint);}
+
+/* drawer */
+.drawer-bg{display:none;position:fixed;inset:0;background:rgba(5,7,10,.65);z-index:50;}
+.drawer-bg.show{display:block;}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(480px,92vw);background:var(--panel);border-left:1px solid var(--border);z-index:51;padding:20px;overflow-y:auto;}
+.drawer h3{font-family:var(--mono);font-size:15px;margin:0 0 4px;}
+.drawer-close{float:right;background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:6px;padding:4px 9px;cursor:pointer;font-size:12px;}
+
+/* misc */
+.stat{text-align:center;}
+.stat .v{font-family:var(--mono);font-weight:700;font-size:20px;}
+.stat .l{font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+.divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;}
+.copy-ok{color:var(--cyan)!important;}
+a{color:var(--cyan);}
+.ai-block{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:10px;}
+.ai-block h4{margin:0 0 8px;font-family:var(--mono);font-size:12.5px;color:var(--amber);}
+.scope-note{font-size:12px;color:var(--text-dim);background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;}
+.scope-note b{color:var(--text);}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">TF</div>
+      <div class="brand-text">
+        <h1>TUBE FORGE</h1>
+        <p>YouTube growth console — SEO scoring, agent pipeline, real progress tracking</p>
+      </div>
+    </div>
+    <div id="channelChip" class="channel-chip empty">No channel connected — go to Setup</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="setup">Setup</button>
+    <button class="tab-btn" data-tab="console">Growth Console</button>
+    <button class="tab-btn" data-tab="audit">Channel Audit</button>
+    <button class="tab-btn" data-tab="optimizer">Optimizer</button>
+    <button class="tab-btn" data-tab="competitor">Competitor</button>
+    <button class="tab-btn" data-tab="keywords">Keywords &amp; Trends</button>
+    <button class="tab-btn" data-tab="autopilot">Autopilot ●</button>
+  </div>
+
+  <!-- ===================== SETUP ===================== -->
+  <div class="tab active" id="tab-setup">
+    <div class="scope-note">
+      <b>What this actually does:</b> Tube Forge reads real public data from your channel through the official YouTube Data API, scores your titles/tags/descriptions with a transparent (non-black-box) heuristic, and uses AI to draft better versions. It tracks a real history snapshot every time you run it, so the Growth Console shows genuine before/after progress — not a simulation.
+      <br><br>
+      <b>What it won't do:</b> auto-like, auto-view, auto-comment, or auto-subscribe. Faking engagement metrics is manipulation and risks a strike — this tool never touches those.
+      <br><br>
+      <b>This read-only dashboard</b> uses an API key and never writes to your channel — everything here is copy-paste. If you want metadata changes actually applied for you around the clock, that's a separate piece: the <b>Tube Forge Agent</b>, a small backend script that logs in as you (real OAuth, your consent) and updates title/description/tags directly through YouTube's official write API — the same thing you'd do by hand in Studio, just automated, score-gated, and rate-limited so it never spam-edits a video. See the <b>Autopilot</b> tab for its live status, and the project README for setup.
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h2><span class="num">01</span>YouTube Data API key</h2>
+        <p class="sub">Free, takes ~2 minutes, no billing required for this usage level.</p>
+        <ol style="font-size:12.5px;color:var(--text-dim);padding-left:18px;line-height:2;">
+          <li>Open <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank">Google Cloud Console → YouTube Data API v3</a> and click <b>Enable</b> (create a project first if asked, any name).</li>
+          <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank">APIs &amp; Services → Credentials</a> → <b>Create Credentials → API key</b>.</li>
+          <li>Copy the key and paste it below. Optionally restrict it to "YouTube Data API v3" only (not by referrer, since this runs in a sandboxed viewer).</li>
+        </ol>
+        <div class="field">
+          <label>API Key</label>
+          <input type="password" id="apiKeyInput" placeholder="AIza...">
+        </div>
+        <div class="field">
+          <label>Your channel — handle, URL, or channel ID</label>
+          <input type="text" id="channelInput" placeholder="@yourchannel or https://youtube.com/@yourchannel">
+        </div>
+        <button class="btn" id="connectBtn">Connect Channel</button>
+        <div class="msg" id="setupMsg"></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">02</span>Connected Channel</h2>
+        <p class="sub">Confirms the key works and shows what Tube Forge can see.</p>
+        <div id="channelPreview" style="font-size:12.5px;color:var(--text-faint);">Not connected yet.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2><span class="num">03</span>Region for trend data</h2>
+      <p class="sub">Used for the Trending tab and competition checks.</p>
+      <select id="regionSelect" style="max-width:260px;">
+        <option value="US">United States</option>
+        <option value="GB">United Kingdom</option>
+        <option value="PK">Pakistan</option>
+        <option value="AE">United Arab Emirates</option>
+        <option value="IN">India</option>
+        <option value="CA">Canada</option>
+        <option value="AU">Australia</option>
+        <option value="DE">Germany</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ===================== GROWTH CONSOLE ===================== -->
+  <div class="tab" id="tab-console">
+    <div class="card">
+      <h2>Agent Pipeline</h2>
+      <p class="sub">Four steps run in sequence against your live channel data. Each one logs exactly what it did.</p>
+      <div class="chip-row" style="margin-bottom:12px;">
+        <span class="pill"><b>Metadata Agent</b>&nbsp;— fetches your videos</span>
+        <span class="pill"><b>SEO Agent</b>&nbsp;— scores title/tags/description</span>
+        <span class="pill"><b>Trend Agent</b>&nbsp;— checks what's ranking now</span>
+        <span class="pill"><b>Growth Agent</b>&nbsp;— compares to your last run</span>
+      </div>
+      <button class="btn" id="runAnalysisBtn">▶ Run Full Analysis</button>
+      <button class="btn ghost" id="clearLogBtn" style="margin-left:8px;">Clear log</button>
+      <div class="console" id="agentConsole" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Growth Log</h2>
+      <p class="sub">One real snapshot per run. This is how you verify actual progress, not promised progress.</p>
+      <div id="growthEmpty" style="font-size:12.5px;color:var(--text-faint);">No snapshots yet — run a full analysis to start tracking.</div>
+      <div id="growthChartWrap" style="display:none;">
+        <canvas id="growthChart" height="90"></canvas>
+        <div style="overflow-x:auto;margin-top:14px;">
+          <table id="growthTable"><thead><tr><th>Run</th><th>Subs</th><th>Total Views</th><th>Videos Scored</th><th>Avg Score</th><th>Δ vs prev</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CHANNEL AUDIT ===================== -->
+  <div class="tab" id="tab-audit">
+    <div class="card">
+      <h2>Channel Audit</h2>
+      <p class="sub">Every scored video, worst-first, so you know exactly what to fix next.</p>
+      <div class="row" style="margin-bottom:6px;">
+        <div>
+          <label>Sort by</label>
+          <select id="auditSort">
+            <option value="score-asc">Growth Score (lowest first)</option>
+            <option value="score-desc">Growth Score (highest first)</option>
+            <option value="views-desc">Views (highest first)</option>
+            <option value="velocity-desc">Views/day (highest first)</option>
+            <option value="date-desc">Newest first</option>
+          </select>
+        </div>
+        <div style="flex:0;"><button class="btn ghost" id="rescoreBtn">Refresh from YouTube</button></div>
+      </div>
+      <div class="msg" id="auditMsg"></div>
+      <div style="overflow-x:auto;margin-top:8px;">
+        <table id="auditTable"><thead><tr><th>Video</th><th>Score</th><th>Views</th><th>Views/day</th><th>Engagement</th><th>Published</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div id="auditEmpty" style="font-size:12.5px;color:var(--text-faint);padding:14px 0;">Connect a channel in Setup, then run analysis, to populate this.</div>
+    </div>
+  </div>
+
+  <!-- ===================== OPTIMIZER ===================== -->
+  <div class="tab" id="tab-optimizer">
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>Draft Video</h2>
+        <div class="field">
+          <label>Video topic / idea</label>
+          <input type="text" id="optTopic" placeholder="e.g. how I automated my invoicing with n8n">
+        </div>
+        <div class="field">
+          <label>Target keyword</label>
+          <input type="text" id="optKeyword" placeholder="e.g. n8n automation tutorial">
+        </div>
+        <div class="field">
+          <label>Draft title <span id="titleScoreBadge"></span></label>
+          <input type="text" id="optTitle" placeholder="Type your title...">
+          <ul class="notes" id="titleNotes"></ul>
+        </div>
+        <div class="field">
+          <label>Draft tags (comma separated) <span id="tagsScoreBadge"></span></label>
+          <textarea id="optTags" placeholder="tag one, tag two, tag three"></textarea>
+          <ul class="notes" id="tagsNotes"></ul>
+        </div>
+        <div class="field">
+          <label>Draft description <span id="descScoreBadge"></span></label>
+          <textarea id="optDesc" style="min-height:110px;" placeholder="First two lines matter most..."></textarea>
+          <ul class="notes" id="descNotes"></ul>
+        </div>
+        <button class="btn cyan" id="aiOptimizeBtn">✨ Generate AI Suggestions</button>
+        <div class="msg" id="optMsg"></div>
+      </div>
+
+      <div class="card">
+        <h2>AI Suggestions</h2>
+        <p class="sub">Generated from your topic, keyword, and channel context. Click any chip to copy.</p>
+        <div id="aiResults" style="font-size:12.5px;color:var(--text-faint);">Fill in the topic and keyword, then generate.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== COMPETITOR ===================== -->
+  <div class="tab" id="tab-competitor">
+    <div class="card">
+      <h2>Competitor Tracker</h2>
+      <p class="sub">Analyze any public channel's recent uploads — cadence, average performance, and the words/tags doing the work.</p>
+      <div class="row">
+        <div><input type="text" id="compInput" placeholder="@competitor or channel URL"></div>
+        <div style="flex:0;"><button class="btn" id="compBtn">Analyze</button></div>
+      </div>
+      <div class="msg" id="compMsg"></div>
+      <div id="compResults" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <!-- ===================== KEYWORDS & TRENDS ===================== -->
+  <div class="tab" id="tab-keywords">
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>Keyword Research</h2>
+        <p class="sub">Real YouTube autocomplete + AI long-tail expansion.</p>
+        <div class="row">
+          <div><input type="text" id="kwInput" placeholder="e.g. beginner guitar"></div>
+          <div style="flex:0;"><button class="btn" id="kwBtn">Research</button></div>
+        </div>
+        <div class="msg" id="kwMsg"></div>
+        <div id="kwResults" style="margin-top:12px;"></div>
+        <button class="btn ghost small" id="kwCompBtn" style="margin-top:10px;display:none;">Check ranking competition (uses more quota)</button>
+        <div id="kwCompResults" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="card">
+        <h2>Trending Now</h2>
+        <div class="row" style="margin-bottom:10px;">
+          <div><button class="btn ghost" id="trendBtn">Load Trending</button></div>
+        </div>
+        <div class="msg" id="trendMsg"></div>
+        <div id="trendResults"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>AI Content Ideas</h2>
+      <p class="sub">Based on your channel's recent titles (run Channel Audit first for best results) and anything trending you've picked above.</p>
+      <button class="btn cyan" id="ideasBtn">Generate 8 Ideas</button>
+      <div id="ideasResults" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- ===================== AUTOPILOT ===================== -->
+  <div class="tab" id="tab-autopilot">
+    <div class="scope-note">
+      <b>What this tab shows:</b> the live output of the <b>Tube Forge Agent</b> — a separate Node.js script running on a schedule (GitHub Actions, cron, or whatever server you deploy it to) that logs into your channel via OAuth and actually updates video metadata. This dashboard doesn't run the agent; it just reads the state file the agent writes after every run. If the panel below says "no data yet," the agent hasn't run against this dashboard's data folder — see the project README to deploy it.
+    </div>
+
+    <div class="grid grid-3" id="apStats">
+      <div class="card"><h2><span id="apLastRun">—</span></h2><p class="sub">Last run</p></div>
+      <div class="card"><h2><span id="apTotalRuns">—</span></h2><p class="sub">Total runs</p></div>
+      <div class="card"><h2><span id="apTotalApplied">—</span></h2><p class="sub">Metadata updates applied</p></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Track Record <span class="pill" style="font-weight:400;">measured, not guessed</span></h2>
+      <p class="sub">Every applied change gets checked ~7-14 days later against real view velocity, not just the rule-based score. The agent gets stricter automatically if its own changes aren't working.</p>
+      <div id="apHealth" style="font-size:12.5px;color:var(--text-faint);">No data yet.</div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Pending Your Review</h2>
+      <p class="sub">The agent flags large rewrites here instead of auto-publishing them — a quick sanity check before a title changes drastically.</p>
+      <div id="apPending" style="font-size:12.5px;color:var(--text-faint);">No data yet.</div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Recent Agent Activity</h2>
+      <p class="sub">Every decision the agent made, applied or not, with the reasoning and score change.</p>
+      <div id="apHistory" style="font-size:12.5px;color:var(--text-faint);">No data yet.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="drawer" id="drawer" style="display:none;">
+  <button class="drawer-close" id="drawerClose">Close ✕</button>
+  <div id="drawerContent"></div>
+</div>
+
+<script>
+/* ============================================================
+   STATE + STORAGE
+============================================================ */
+const state = {
+  apiKey:'', region:'US',
+  channel:null,          // youtube channel object
+  videos:[],             // scored video array
+  lastSnapshot:null,
+  ownTitleWords:[]        // frequency words for niche context
+};
+
+async function saveConfig(){
+  try{
+    await window.storage.set('tubeforge:config', JSON.stringify({apiKey:state.apiKey, channelInput:document.getElementById('channelInput').value, region:state.region}), false);
+  }catch(e){}
+}
+async function loadConfig(){
+  try{
+    const r = await window.storage.get('tubeforge:config', false);
+    if(r && r.value){
+      const c = JSON.parse(r.value);
+      state.apiKey = c.apiKey||''; state.region = c.region||'US';
+      document.getElementById('apiKeyInput').value = state.apiKey;
+      document.getElementById('channelInput').value = c.channelInput||'';
+      document.getElementById('regionSelect').value = state.region;
+    }
+  }catch(e){}
+}
+async function saveSnapshot(snap){
+  try{
+    let list = [];
+    try{ const r = await window.storage.get('tubeforge:snapshots', false); if(r&&r.value) list = JSON.parse(r.value); }catch(e){}
+    list.push(snap);
+    if(list.length>60) list = list.slice(list.length-60);
+    await window.storage.set('tubeforge:snapshots', JSON.stringify(list), false);
+    return list;
+  }catch(e){ return []; }
+}
+async function loadSnapshots(){
+  try{ const r = await window.storage.get('tubeforge:snapshots', false); if(r&&r.value) return JSON.parse(r.value); }catch(e){}
+  return [];
+}
+
+/* ============================================================
+   YOUTUBE API HELPERS
+============================================================ */
+async function ytApi(path){
+  const sep = path.includes('?') ? '&' : '?';
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/${path}${sep}key=${encodeURIComponent(state.apiKey)}`);
+  const data = await res.json();
+  if(data.error){
+    const msg = data.error.message || 'YouTube API error';
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function normalizeChannelInput(raw){
+  let input = (raw||'').trim();
+  if(/^UC[0-9A-Za-z_-]{22}$/.test(input)) return {type:'id', value:input};
+  if(input.startsWith('http')){
+    try{
+      const u = new URL(input);
+      const parts = u.pathname.split('/').filter(Boolean);
+      if(parts[0]==='channel' && parts[1]) return {type:'id', value:parts[1]};
+      if(parts[0] && parts[0].startsWith('@')) return {type:'handle', value:parts[0]};
+      if(parts[0]==='c' && parts[1]) return {type:'custom', value:parts[1]};
+      if(parts[0]==='user' && parts[1]) return {type:'user', value:parts[1]};
+      if(parts[0] && parts[0].startsWith('@')===false && parts.length===1) return {type:'handle', value:'@'+parts[0]};
+    }catch(e){}
+  }
+  if(input.startsWith('@')) return {type:'handle', value:input};
+  return {type:'handle', value:'@'+input};
+}
+
+async function resolveChannel(raw){
+  const n = normalizeChannelInput(raw);
+  let data;
+  if(n.type==='id') data = await ytApi(`channels?part=snippet,statistics,contentDetails&id=${n.value}`);
+  else if(n.type==='handle') data = await ytApi(`channels?part=snippet,statistics,contentDetails&forHandle=${encodeURIComponent(n.value)}`);
+  else if(n.type==='user') data = await ytApi(`channels?part=snippet,statistics,contentDetails&forUsername=${encodeURIComponent(n.value)}`);
+  else data = await ytApi(`channels?part=snippet,statistics,contentDetails&forHandle=${encodeURIComponent('@'+n.value)}`);
+
+  if((!data.items || !data.items.length)){
+    data = await ytApi(`channels?part=snippet,statistics,contentDetails&forHandle=${encodeURIComponent('@'+n.value)}`);
+  }
+  if(!data.items || !data.items.length) throw new Error('Channel not found — check the handle, URL, or ID.');
+  return data.items[0];
+}
+
+async function fetchPlaylistVideoIds(playlistId, maxVideos){
+  let ids=[]; let pageToken='';
+  while(ids.length<maxVideos){
+    const data = await ytApi(`playlistItems?part=contentDetails&playlistId=${playlistId}&maxResults=50${pageToken?'&pageToken='+pageToken:''}`);
+    ids.push(...data.items.map(i=>i.contentDetails.videoId));
+    if(!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
+  }
+  return ids.slice(0,maxVideos);
+}
+
+async function fetchVideosDetails(ids){
+  let out=[];
+  for(let i=0;i<ids.length;i+=50){
+    const chunk = ids.slice(i,i+50);
+    const data = await ytApi(`videos?part=snippet,statistics,contentDetails,status&id=${chunk.join(',')}`);
+    out.push(...data.items);
+  }
+  return out;
+}
+
+function ytSuggest(query){
+  return new Promise((resolve)=>{
+    const cb = 'ytcb_'+Math.random().toString(36).slice(2);
+    let done=false;
+    const script = document.createElement('script');
+    window[cb] = (data)=>{ done=true; try{ resolve(data[1].map(x=>x[0])); }catch(e){ resolve([]); } cleanup(); };
+    function cleanup(){ delete window[cb]; script.remove(); }
+    script.src = `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(query)}&callback=${cb}`;
+    script.onerror = ()=>{ if(!done){ resolve([]); cleanup(); } };
+    document.body.appendChild(script);
+    setTimeout(()=>{ if(!done){ resolve([]); cleanup(); } }, 4000);
+  });
+}
+
+/* ============================================================
+   AI (Pollinations, free, no key)
+============================================================ */
+async function askAI(systemPrompt, userPrompt){
+  try{
+    const res = await fetch('https://text.pollinations.ai/openai', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'openai',
+        messages:[
+          {role:'system', content: systemPrompt + ' Respond with ONLY valid JSON, no markdown fences, no commentary.'},
+          {role:'user', content: userPrompt}
+        ]
+      })
+    });
+    const data = await res.json();
+    let text = '';
+    if(data.choices && data.choices[0] && data.choices[0].message) text = data.choices[0].message.content;
+    else if(typeof data === 'string') text = data;
+    else text = JSON.stringify(data);
+    return parseAIJson(text);
+  }catch(e){
+    // fallback to GET endpoint
+    try{
+      const res2 = await fetch('https://text.pollinations.ai/'+encodeURIComponent(systemPrompt+'\n\n'+userPrompt+'\n\nRespond with ONLY valid JSON.'));
+      const text2 = await res2.text();
+      return parseAIJson(text2);
+    }catch(e2){
+      throw new Error('AI request failed: '+e.message);
+    }
+  }
+}
+function parseAIJson(text){
+  if(!text) throw new Error('Empty AI response');
+  let t = text.trim();
+  t = t.replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  const start = t.indexOf('{'); const startArr = t.indexOf('[');
+  let s = start;
+  if(startArr!==-1 && (start===-1 || startArr<start)) s = startArr;
+  if(s>0) t = t.slice(s);
+  const endObj = t.lastIndexOf('}'); const endArr = t.lastIndexOf(']');
+  const e = Math.max(endObj, endArr);
+  if(e!==-1 && e < t.length-1) t = t.slice(0, e+1);
+  return JSON.parse(t);
+}
+
+/* ============================================================
+   SCORING HEURISTICS (transparent, not a black box)
+============================================================ */
+function scoreTitle(title, keyword){
+  title = title||''; let score=100; const notes=[];
+  const len = title.length;
+  if(len===0) return {score:0, notes:['No title yet.']};
+  if(len<20){score-=20; notes.push('Short title — aim for 40–70 characters so search has enough to match on.');}
+  else if(len>70){score-=15; notes.push('Long title — it may get truncated in search and suggested feeds (aim under 70 characters).');}
+  if(title.length>15 && title===title.toUpperCase() && /[A-Z]/.test(title)){score-=15; notes.push('ALL CAPS reads as spammy and can hurt trust signals.');}
+  if(!/\d/.test(title)){score-=5; notes.push('Consider a number (count, year, or step) — numbered titles often earn stronger CTR.');}
+  const wordCount = title.trim().split(/\s+/).filter(Boolean).length;
+  if(wordCount<4){score-=10; notes.push('Add a few more descriptive words so the topic is unambiguous.');}
+  if(keyword){
+    const idx = title.toLowerCase().indexOf(keyword.toLowerCase());
+    if(idx===-1){score-=20; notes.push(`Target keyword "${keyword}" isn't in the title — include it, ideally in the first half.`);}
+    else if(idx > title.length*0.5){score-=8; notes.push('Move the target keyword earlier in the title for stronger search relevance.');}
+  }
+  const punctCount = (title.match(/[!?]/g)||[]).length;
+  if(punctCount>2){score-=8; notes.push('Multiple ! or ? can look clickbaity — one is usually enough.');}
+  const emojiCount = (title.match(/\p{Extended_Pictographic}/gu)||[]).length;
+  if(emojiCount>2){score-=5; notes.push('Several emoji clutter search results — one well-placed emoji is plenty.');}
+  score = Math.max(0, Math.min(100, score));
+  if(notes.length===0) notes.push('Solid title — clear, keyword-forward, and well sized for search.');
+  return {score, notes};
+}
+
+function scoreTags(tagsArr){
+  tagsArr = (tagsArr||[]).map(t=>t.trim()).filter(Boolean);
+  let score=100; const notes=[];
+  if(tagsArr.length===0){ return {score:10, notes:['No tags found — add 8–15 tags mixing broad and specific terms.']}; }
+  const totalChars = tagsArr.join(',').length;
+  if(tagsArr.length<5){score-=25; notes.push('Few tags — add more specific long-tail tags.');}
+  if(totalChars>460){score-=10; notes.push("Close to YouTube's ~500 character tag limit — trim lower-value tags.");}
+  if(totalChars<100){score-=15; notes.push('Tag field is underused — there is room for more specific keyword tags.');}
+  const uniq = new Set(tagsArr.map(t=>t.toLowerCase()));
+  if(uniq.size !== tagsArr.length){score-=10; notes.push('Duplicate tags — remove repeats and use the space for new terms.');}
+  score = Math.max(0, Math.min(100, score));
+  if(notes.length===0) notes.push('Tag set looks well balanced.');
+  return {score, notes};
+}
+
+function scoreDescription(desc){
+  desc = desc||''; let score=100; const notes=[];
+  const len = desc.length;
+  const firstLine = desc.split('\n')[0]||'';
+  if(len<100){score-=25; notes.push('Description is thin — aim for 200+ words with keywords in the first two lines.');}
+  if(firstLine.length<40){score-=15; notes.push('First line is short — that\'s what shows before "Show more," make it count.');}
+  if(!/https?:\/\//.test(desc)){score-=5; notes.push('No links found — add relevant links (socials, playlist, related video).');}
+  if(!/\d{1,2}:\d{2}/.test(desc)){notes.push('No timestamps — for longer videos, timestamps help watch time and search snippets.');}
+  score = Math.max(0, Math.min(100, score));
+  if(notes.length===0) notes.push('Description is well structured.');
+  return {score, notes};
+}
+
+function scoreVideo(v){
+  const snippet = v.snippet||{}; const stats = v.statistics||{};
+  const title = snippet.title||''; const tags = snippet.tags||[]; const desc = snippet.description||'';
+  const views = parseInt(stats.viewCount||'0',10);
+  const likes = parseInt(stats.likeCount||'0',10);
+  const comments = parseInt(stats.commentCount||'0',10);
+  const published = new Date(snippet.publishedAt);
+  const daysSince = Math.max(1, Math.floor((Date.now()-published.getTime())/86400000));
+  const velocity = views/daysSince;
+  const engagementRate = views>0 ? ((likes+comments)/views*100) : 0;
+
+  const ts = scoreTitle(title, null);
+  const tgs = scoreTags(tags);
+  const ds = scoreDescription(desc);
+  const engNorm = Math.min(100, engagementRate*20);
+  const overall = Math.round(ts.score*0.4 + tgs.score*0.25 + ds.score*0.2 + engNorm*0.15);
+
+  return {
+    id: v.id, title, tags, desc, views, likes, comments, published, daysSince, velocity, engagementRate,
+    thumb: (snippet.thumbnails && (snippet.thumbnails.medium||snippet.thumbnails.default)||{}).url || '',
+    titleScore: ts, tagScore: tgs, descScore: ds, overall
+  };
+}
+
+/* ============================================================
+   GAUGE RENDER
+============================================================ */
+function polarToCartesian(cx,cy,r,angleDeg){
+  const a = (angleDeg-90)*Math.PI/180;
+  return {x: cx + r*Math.cos(a), y: cy + r*Math.sin(a)};
+}
+function arcPath(cx,cy,r,startAngle,endAngle){
+  const s = polarToCartesian(cx,cy,r,endAngle);
+  const e = polarToCartesian(cx,cy,r,startAngle);
+  const large = endAngle-startAngle<=180?0:1;
+  return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 0 ${e.x} ${e.y}`;
+}
+function gaugeSVG(score, size){
+  size = size||140;
+  const cx=size/2, cy=size/2+6, r=size/2-14;
+  const angle = (score/100)*180 - 90;
+  const needleEnd = polarToCartesian(cx,cy,r-8,angle+90);
+  const color = score>=70?'var(--cyan)':score>=40?'var(--amber)':'var(--coral)';
+  return `
+  <svg width="${size}" height="${size*0.62}" viewBox="0 0 ${size} ${size*0.62}">
+    <path d="${arcPath(cx,cy,r,-90,-18)}" stroke="var(--coral)" stroke-width="10" fill="none" stroke-linecap="round" opacity="0.55"/>
+    <path d="${arcPath(cx,cy,r,-18,36)}" stroke="var(--amber)" stroke-width="10" fill="none" stroke-linecap="round" opacity="0.55"/>
+    <path d="${arcPath(cx,cy,r,36,90)}" stroke="var(--cyan)" stroke-width="10" fill="none" stroke-linecap="round" opacity="0.55"/>
+    <line x1="${cx}" y1="${cy}" x2="${needleEnd.x}" y2="${needleEnd.y}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="4" fill="${color}"/>
+  </svg>`;
+}
+function scoreClass(score){ return score>=70?'good':score>=40?'mid':'low'; }
+
+/* ============================================================
+   CONSOLE LOG
+============================================================ */
+function log(msg, level){
+  const el = document.getElementById('agentConsole');
+  const div = document.createElement('div');
+  div.className='line';
+  const cls = level==='err'?'err':level==='warn'?'warn':level==='ok'?'ok':'';
+  div.innerHTML = `<span class="dim">[${new Date().toLocaleTimeString()}]</span> <span class="tag ${cls}">${msg}</span>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+/* ============================================================
+   TAB SWITCHING
+============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+function goTab(name){
+  document.querySelector(`.tab-btn[data-tab="${name}"]`).click();
+}
+
+/* ============================================================
+   SETUP
+============================================================ */
+function showMsg(id, text, type){
+  const el = document.getElementById(id);
+  el.textContent = text; el.className = 'msg show '+type;
+}
+function hideMsg(id){ document.getElementById(id).className='msg'; }
+
+function renderChannelChip(){
+  const chip = document.getElementById('channelChip');
+  if(!state.channel){ chip.className='channel-chip empty'; chip.textContent='No channel connected — go to Setup'; return; }
+  const s = state.channel.snippet, st = state.channel.statistics;
+  chip.className='channel-chip';
+  chip.innerHTML = `<img src="${(s.thumbnails&&s.thumbnails.default||{}).url||''}"><div class="ct"><div class="cname">${s.title}</div><div class="cstats">${Number(st.subscriberCount||0).toLocaleString()} subs · ${Number(st.viewCount||0).toLocaleString()} views</div></div>`;
+}
+
+document.getElementById('connectBtn').addEventListener('click', async ()=>{
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const input = document.getElementById('channelInput').value.trim();
+  hideMsg('setupMsg');
+  if(!key){ showMsg('setupMsg','Paste your YouTube Data API key first.','err'); return; }
+  if(!input){ showMsg('setupMsg','Enter your channel handle, URL, or ID.','err'); return; }
+  state.apiKey = key; state.region = document.getElementById('regionSelect').value;
+  const btn = document.getElementById('connectBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Connecting...';
+  try{
+    const ch = await resolveChannel(input);
+    state.channel = ch;
+    renderChannelChip();
+    document.getElementById('channelPreview').innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;">
+        <img src="${(ch.snippet.thumbnails&&ch.snippet.thumbnails.medium||{}).url||''}" style="width:56px;height:56px;border-radius:50%;">
+        <div>
+          <div style="font-weight:700;font-size:14px;">${ch.snippet.title}</div>
+          <div class="vmeta" style="margin-top:4px;">${Number(ch.statistics.subscriberCount||0).toLocaleString()} subscribers · ${Number(ch.statistics.videoCount||0).toLocaleString()} videos · ${Number(ch.statistics.viewCount||0).toLocaleString()} total views</div>
+        </div>
+      </div>`;
+    showMsg('setupMsg','Connected. Head to Growth Console and run a full analysis.','ok');
+    await saveConfig();
+  }catch(e){
+    showMsg('setupMsg', e.message, 'err');
+  }finally{
+    btn.disabled=false; btn.textContent='Connect Channel';
+  }
+});
+document.getElementById('regionSelect').addEventListener('change', e=>{ state.region = e.target.value; saveConfig(); });
+
+/* ============================================================
+   GROWTH CONSOLE — AGENT PIPELINE
+============================================================ */
+document.getElementById('clearLogBtn').addEventListener('click', ()=>{ document.getElementById('agentConsole').innerHTML=''; });
+
+document.getElementById('runAnalysisBtn').addEventListener('click', runFullAnalysis);
+document.getElementById('rescoreBtn').addEventListener('click', runFullAnalysis);
+
+async function runFullAnalysis(){
+  if(!state.apiKey || !state.channel){
+    goTab('setup');
+    showMsg('setupMsg','Connect your channel first.','err');
+    return;
+  }
+  const runBtn = document.getElementById('runAnalysisBtn');
+  runBtn.disabled = true; runBtn.innerHTML='<span class="spin"></span>Running...';
+  try{
+    log('METADATA AGENT — starting', 'ok');
+    log(`Fetching uploads for "${state.channel.snippet.title}"...`);
+    const uploadsId = state.channel.contentDetails.relatedPlaylists.uploads;
+    const ids = await fetchPlaylistVideoIds(uploadsId, 60);
+    log(`Found ${ids.length} videos. Pulling full metadata + stats...`);
+    const details = await fetchVideosDetails(ids);
+    log(`Metadata Agent done — ${details.length} videos loaded.`, 'ok');
+
+    log('SEO AGENT — starting', 'ok');
+    const scored = details.map(scoreVideo).sort((a,b)=>a.overall-b.overall);
+    state.videos = scored;
+    const avgScore = Math.round(scored.reduce((s,v)=>s+v.overall,0)/Math.max(1,scored.length));
+    const weakest = scored.slice(0,3);
+    log(`Scored ${scored.length} videos. Average Growth Score: ${avgScore}/100.`);
+    weakest.forEach(v=> log(`Needs work (${v.overall}/100): "${v.title.slice(0,60)}"`, 'warn'));
+    log('SEO Agent done.', 'ok');
+
+    log('TREND AGENT — starting', 'ok');
+    let trendCount = 0;
+    try{
+      const trendData = await ytApi(`videos?part=snippet,statistics&chart=mostPopular&regionCode=${state.region}&maxResults=10`);
+      trendCount = (trendData.items||[]).length;
+      log(`Pulled ${trendCount} trending videos for region ${state.region} for reference.`);
+    }catch(e){ log('Trend check skipped: '+e.message, 'warn'); }
+    log('Trend Agent done.', 'ok');
+
+    log('GROWTH AGENT — starting', 'ok');
+    const snaps = await loadSnapshots();
+    const prev = snaps.length ? snaps[snaps.length-1] : null;
+    const snapshot = {
+      date: new Date().toISOString(),
+      subs: parseInt(state.channel.statistics.subscriberCount||'0',10),
+      totalViews: parseInt(state.channel.statistics.viewCount||'0',10),
+      videoCount: scored.length,
+      avgScore
+    };
+    if(prev){
+      const dSubs = snapshot.subs - prev.subs;
+      const dViews = snapshot.totalViews - prev.totalViews;
+      const dScore = snapshot.avgScore - prev.avgScore;
+      log(`Since last run (${new Date(prev.date).toLocaleDateString()}): subscribers ${dSubs>=0?'+':''}${dSubs}, views ${dViews>=0?'+':''}${dViews.toLocaleString()}, avg score ${dScore>=0?'+':''}${dScore}.`, dScore>=0?'ok':'warn');
+    } else {
+      log('This is your first snapshot — future runs will show real deltas here.');
+    }
+    const newList = await saveSnapshot(snapshot);
+    renderGrowthLog(newList);
+    log('Growth Agent done. Snapshot saved.', 'ok');
+    log('PIPELINE COMPLETE — see Channel Audit for the full breakdown.', 'ok');
+
+    renderAuditTable();
+    document.getElementById('auditEmpty').style.display='none';
+  }catch(e){
+    log('ERROR: '+e.message, 'err');
+  }finally{
+    runBtn.disabled=false; runBtn.innerHTML='▶ Run Full Analysis';
+  }
+}
+
+let growthChartObj = null;
+function renderGrowthLog(list){
+  if(!list || !list.length) return;
+  document.getElementById('growthEmpty').style.display='none';
+  document.getElementById('growthChartWrap').style.display='block';
+  const tbody = document.querySelector('#growthTable tbody');
+  tbody.innerHTML='';
+  list.slice().reverse().forEach((s,idx)=>{
+    const realIdx = list.length-1-idx;
+    const prev = list[realIdx-1];
+    const delta = prev ? s.avgScore-prev.avgScore : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${new Date(s.date).toLocaleString()}</td><td>${s.subs.toLocaleString()}</td><td>${s.totalViews.toLocaleString()}</td><td>${s.videoCount}</td><td><span class="score-badge ${scoreClass(s.avgScore)}">${s.avgScore}</span></td><td>${prev? (delta>=0?'+':'')+delta : '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+  const ctx = document.getElementById('growthChart').getContext('2d');
+  const labels = list.map(s=>new Date(s.date).toLocaleDateString());
+  if(growthChartObj) growthChartObj.destroy();
+  growthChartObj = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[
+      {label:'Avg Growth Score', data:list.map(s=>s.avgScore), borderColor:'#F5B942', backgroundColor:'rgba(245,185,66,.08)', yAxisID:'y', tension:.3},
+      {label:'Subscribers', data:list.map(s=>s.subs), borderColor:'#48D9CF', backgroundColor:'rgba(72,217,207,.08)', yAxisID:'y1', tension:.3}
+    ]},
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        y:{position:'left', ticks:{color:'#8D97A8'}, grid:{color:'#1D2431'}, title:{display:true,text:'Avg Score',color:'#8D97A8'}},
+        y1:{position:'right', ticks:{color:'#8D97A8'}, grid:{display:false}, title:{display:true,text:'Subscribers',color:'#8D97A8'}},
+        x:{ticks:{color:'#8D97A8'}, grid:{color:'#1D2431'}}
+      },
+      plugins:{legend:{labels:{color:'#E8ECF2'}}}
+    }
+  });
+}
+loadSnapshots().then(renderGrowthLog);
+
+/* ============================================================
+   CHANNEL AUDIT
+============================================================ */
+function renderAuditTable(){
+  const sortBy = document.getElementById('auditSort').value;
+  let list = state.videos.slice();
+  if(sortBy==='score-asc') list.sort((a,b)=>a.overall-b.overall);
+  else if(sortBy==='score-desc') list.sort((a,b)=>b.overall-a.overall);
+  else if(sortBy==='views-desc') list.sort((a,b)=>b.views-a.views);
+  else if(sortBy==='velocity-desc') list.sort((a,b)=>b.velocity-a.velocity);
+  else if(sortBy==='date-desc') list.sort((a,b)=>b.published-a.published);
+
+  const tbody = document.querySelector('#auditTable tbody');
+  tbody.innerHTML='';
+  list.forEach(v=>{
+    const tr = document.createElement('tr');
+    tr.className='vrow';
+    tr.innerHTML = `
+      <td><div class="vtitle"><img src="${v.thumb}"><div class="tt">${v.title}</div></div></td>
+      <td><span class="score-badge ${scoreClass(v.overall)}">${v.overall}</span></td>
+      <td class="vmeta">${v.views.toLocaleString()}</td>
+      <td class="vmeta">${v.velocity.toFixed(1)}</td>
+      <td class="vmeta">${v.engagementRate.toFixed(2)}%</td>
+      <td class="vmeta">${v.published.toLocaleDateString()}</td>`;
+    tr.addEventListener('click', ()=>openVideoDrawer(v));
+    tbody.appendChild(tr);
+  });
+  document.getElementById('auditEmpty').style.display = list.length? 'none':'block';
+}
+document.getElementById('auditSort').addEventListener('change', renderAuditTable);
+
+function openVideoDrawer(v){
+  const content = document.getElementById('drawerContent');
+  content.innerHTML = `
+    <h3>${v.title}</h3>
+    <div class="vmeta" style="margin-bottom:14px;">${v.views.toLocaleString()} views · ${v.likes.toLocaleString()} likes · ${v.comments.toLocaleString()} comments · published ${v.published.toLocaleDateString()}</div>
+    <div class="gauge-wrap">${gaugeSVG(v.overall,150)}<div class="gauge-num" style="color:${v.overall>=70?'var(--cyan)':v.overall>=40?'var(--amber)':'var(--coral)'}">${v.overall}</div><div class="gauge-label">Growth Score</div></div>
+    <hr class="divider">
+    <div><b>Title</b> <span class="score-badge ${scoreClass(v.titleScore.score)}">${v.titleScore.score}</span><ul class="notes">${v.titleScore.notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>
+    <div><b>Tags</b> <span class="score-badge ${scoreClass(v.tagScore.score)}">${v.tagScore.score}</span><ul class="notes">${v.tagScore.notes.map(n=>`<li>${n}</li>`).join('')}</ul>
+      <div class="chip-row" style="margin-top:6px;">${(v.tags||[]).slice(0,20).map(t=>`<span class="pill">${t}</span>`).join('') || '<span class="hint">No tags set.</span>'}</div>
+    </div>
+    <div style="margin-top:10px;"><b>Description</b> <span class="score-badge ${scoreClass(v.descScore.score)}">${v.descScore.score}</span><ul class="notes">${v.descScore.notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>
+    <button class="btn cyan" style="margin-top:14px;" id="sendToOptimizer">Send to Optimizer →</button>
+  `;
+  document.getElementById('sendToOptimizer').addEventListener('click', ()=>{
+    document.getElementById('optTopic').value = v.title;
+    document.getElementById('optTitle').value = v.title;
+    document.getElementById('optTags').value = (v.tags||[]).join(', ');
+    document.getElementById('optDesc').value = v.desc;
+    scoreOptimizerLive();
+    closeDrawer();
+    goTab('optimizer');
+  });
+  document.getElementById('drawerBg').classList.add('show');
+  document.getElementById('drawer').style.display='block';
+}
+function closeDrawer(){ document.getElementById('drawerBg').classList.remove('show'); document.getElementById('drawer').style.display='none'; }
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+document.getElementById('drawerBg').addEventListener('click', closeDrawer);
+
+/* ============================================================
+   OPTIMIZER — live heuristic scoring
+============================================================ */
+function badgeHTML(score){ return `<span class="score-badge ${scoreClass(score)}">${score}</span>`; }
+function scoreOptimizerLive(){
+  const kw = document.getElementById('optKeyword').value.trim();
+  const t = scoreTitle(document.getElementById('optTitle').value, kw);
+  document.getElementById('titleScoreBadge').innerHTML = badgeHTML(t.score);
+  document.getElementById('titleNotes').innerHTML = t.notes.map(n=>`<li>${n}</li>`).join('');
+
+  const tags = document.getElementById('optTags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const tg = scoreTags(tags);
+  document.getElementById('tagsScoreBadge').innerHTML = badgeHTML(tg.score);
+  document.getElementById('tagsNotes').innerHTML = tg.notes.map(n=>`<li>${n}</li>`).join('');
+
+  const d = scoreDescription(document.getElementById('optDesc').value);
+  document.getElementById('descScoreBadge').innerHTML = badgeHTML(d.score);
+  document.getElementById('descNotes').innerHTML = d.notes.map(n=>`<li>${n}</li>`).join('');
+}
+['optTitle','optTags','optDesc','optKeyword'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', scoreOptimizerLive);
+});
+
+function copyText(text, el){
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig = el.textContent;
+    el.classList.add('copy-ok');
+    el.textContent = 'Copied ✓';
+    setTimeout(()=>{ el.textContent = orig; el.classList.remove('copy-ok'); }, 1200);
+  });
+}
+
+document.getElementById('aiOptimizeBtn').addEventListener('click', async ()=>{
+  const topic = document.getElementById('optTopic').value.trim();
+  const keyword = document.getElementById('optKeyword').value.trim();
+  if(!topic){ showMsg('optMsg','Enter a video topic first.','err'); return; }
+  hideMsg('optMsg');
+  const btn = document.getElementById('aiOptimizeBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Thinking...';
+  const niche = state.videos.length ? 'Recent video titles on this channel: '+state.videos.slice(0,10).map(v=>v.title).join(' | ') : '';
+  try{
+    const sys = 'You are a YouTube SEO and metadata specialist. You write titles, tags, hashtags and descriptions optimized for YouTube search and suggested-video ranking, in a natural, non-clickbait voice.';
+    const usr = `Video topic: "${topic}". Target keyword: "${keyword||'(none given, infer one)'}". ${niche}
+Return JSON with exactly this shape:
+{"titles": ["5 alternative titles, 40-70 chars, keyword near the front"],
+ "tags": ["18-22 comma-style tags, mix of broad and specific, no # symbol"],
+ "hashtags": ["3 to 5 hashtags including the # symbol"],
+ "hooks": ["3 first-line description hooks, each under 25 words"],
+ "description": "a full 150-250 word optimized description including a natural keyword mention and a placeholder [LINK] and [TIMESTAMPS] section"}`;
+    const result = await askAI(sys, usr);
+    renderAIResults(result);
+  }catch(e){
+    showMsg('optMsg', 'AI request failed: '+e.message+'. Try again in a moment.', 'err');
+  }finally{
+    btn.disabled=false; btn.innerHTML='✨ Generate AI Suggestions';
+  }
+});
+
+function renderAIResults(r){
+  const el = document.getElementById('aiResults');
+  let html = '';
+  if(r.titles){
+    html += `<div class="ai-block"><h4>Title options</h4>` + r.titles.map(t=>{
+      const sc = scoreTitle(t, document.getElementById('optKeyword').value.trim());
+      return `<div class="pill copyable" style="display:block;padding:8px 10px;margin-bottom:6px;" onclick="copyText(${JSON.stringify(t)}, this.querySelector('.cpy'))">${t} <span class="score-badge ${scoreClass(sc.score)}" style="float:right;">${sc.score}</span><span class="cpy" style="display:none;"></span></div>`;
+    }).join('') + `</div>`;
+  }
+  if(r.tags){
+    html += `<div class="ai-block"><h4>Tags — click to copy all</h4><div class="chip-row">${r.tags.map(t=>`<span class="pill copyable" onclick="copyText('${t.replace(/'/g,"\\'")}', this)">${t}</span>`).join('')}</div>
+    <button class="btn ghost small" style="margin-top:10px;" onclick="copyText(${JSON.stringify(r.tags.join(', '))}, this)">Copy all tags</button></div>`;
+  }
+  if(r.hashtags){
+    html += `<div class="ai-block"><h4>Hashtags</h4><div class="chip-row">${r.hashtags.map(t=>`<span class="pill copyable" onclick="copyText('${t.replace(/'/g,"\\'")}', this)">${t}</span>`).join('')}</div></div>`;
+  }
+  if(r.hooks){
+    html += `<div class="ai-block"><h4>Description hooks</h4>${r.hooks.map(h=>`<div class="pill copyable" style="display:block;padding:8px 10px;margin-bottom:6px;" onclick="copyText(${JSON.stringify(h)}, this)">${h}</div>`).join('')}</div>`;
+  }
+  if(r.description){
+    html += `<div class="ai-block"><h4>Full description draft</h4><textarea readonly style="min-height:140px;">${r.description}</textarea><button class="btn ghost small" style="margin-top:8px;" onclick="copyText(${JSON.stringify(r.description)}, this)">Copy description</button></div>`;
+  }
+  el.innerHTML = html || '<div class="hint">No structured suggestions returned — try again.</div>';
+}
+
+/* ============================================================
+   COMPETITOR
+============================================================ */
+const STOPWORDS = new Set(['the','a','an','to','of','in','on','for','and','is','how','my','i','you','your','this','that','with','it','vs','&','|','-','–']);
+function wordFreq(titles){
+  const freq = {};
+  titles.forEach(t=>{
+    t.toLowerCase().replace(/[^\w\s]/g,' ').split(/\s+/).filter(Boolean).forEach(w=>{
+      if(STOPWORDS.has(w) || w.length<3) return;
+      freq[w] = (freq[w]||0)+1;
+    });
+  });
+  return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,15);
+}
+
+document.getElementById('compBtn').addEventListener('click', async ()=>{
+  if(!state.apiKey){ goTab('setup'); return; }
+  const input = document.getElementById('compInput').value.trim();
+  if(!input){ showMsg('compMsg','Enter a channel to analyze.','err'); return; }
+  hideMsg('compMsg');
+  const btn = document.getElementById('compBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Analyzing...';
+  try{
+    const ch = await resolveChannel(input);
+    const uploadsId = ch.contentDetails.relatedPlaylists.uploads;
+    const ids = await fetchPlaylistVideoIds(uploadsId, 15);
+    const details = await fetchVideosDetails(ids);
+    const scored = details.map(scoreVideo);
+    const avgViews = Math.round(scored.reduce((s,v)=>s+v.views,0)/Math.max(1,scored.length));
+    const dates = scored.map(v=>v.published.getTime()).sort((a,b)=>a-b);
+    const spanDays = dates.length>1 ? (dates[dates.length-1]-dates[0])/86400000 : 1;
+    const cadence = spanDays>0 ? (scored.length/spanDays*7).toFixed(1) : '—';
+    const topWords = wordFreq(scored.map(v=>v.title));
+    let allTags = []; scored.forEach(v=>allTags.push(...v.tags));
+    const tagFreqMap = {}; allTags.forEach(t=>{tagFreqMap[t.toLowerCase()]=(tagFreqMap[t.toLowerCase()]||0)+1;});
+    const topTags = Object.entries(tagFreqMap).sort((a,b)=>b[1]-a[1]).slice(0,12);
+
+    const own = state.videos.length ? {
+      avgViews: Math.round(state.videos.reduce((s,v)=>s+v.views,0)/state.videos.length),
+      avgScore: Math.round(state.videos.reduce((s,v)=>s+v.overall,0)/state.videos.length)
+    } : null;
+
+    document.getElementById('compResults').innerHTML = `
+      <div class="grid grid-2">
+        <div>
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+            <img src="${(ch.snippet.thumbnails&&ch.snippet.thumbnails.default||{}).url||''}" style="width:44px;height:44px;border-radius:50%;">
+            <div><div style="font-weight:700;">${ch.snippet.title}</div><div class="vmeta">${Number(ch.statistics.subscriberCount||0).toLocaleString()} subs</div></div>
+          </div>
+          <div class="grid grid-3">
+            <div class="stat"><div class="v">${avgViews.toLocaleString()}</div><div class="l">Avg views /video</div></div>
+            <div class="stat"><div class="v">${cadence}</div><div class="l">Uploads / week</div></div>
+            <div class="stat"><div class="v">${scored.length}</div><div class="l">Videos sampled</div></div>
+          </div>
+          ${own?`<div class="hint" style="margin-top:12px;">Your channel avg views: <b>${own.avgViews.toLocaleString()}</b> · your avg score: <b>${own.avgScore}</b></div>`:'<div class="hint" style="margin-top:12px;">Run a Channel Audit on your own channel to compare side by side.</div>'}
+        </div>
+        <div>
+          <h4 style="font-family:var(--mono);font-size:12.5px;color:var(--amber);margin:0 0 8px;">Words that recur in their top titles</h4>
+          <div class="chip-row">${topWords.map(([w,c])=>`<span class="pill">${w} ×${c}</span>`).join('') || '<span class="hint">Not enough data.</span>'}</div>
+          <h4 style="font-family:var(--mono);font-size:12.5px;color:var(--amber);margin:14px 0 8px;">Tags they lean on</h4>
+          <div class="chip-row">${topTags.map(([t,c])=>`<span class="pill">${t} ×${c}</span>`).join('') || '<span class="hint">No public tags found.</span>'}</div>
+        </div>
+      </div>`;
+  }catch(e){
+    showMsg('compMsg', e.message, 'err');
+  }finally{
+    btn.disabled=false; btn.textContent='Analyze';
+  }
+});
+
+/* ============================================================
+   KEYWORDS & TRENDS
+============================================================ */
+let lastKeyword = '';
+document.getElementById('kwBtn').addEventListener('click', async ()=>{
+  const q = document.getElementById('kwInput').value.trim();
+  if(!q){ return; }
+  lastKeyword = q;
+  hideMsg('kwMsg');
+  const btn = document.getElementById('kwBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Researching...';
+  document.getElementById('kwResults').innerHTML='';
+  try{
+    const [suggestions, aiExpand] = await Promise.all([
+      ytSuggest(q),
+      askAI(
+        'You are a YouTube keyword strategist.',
+        `Seed keyword: "${q}". Return JSON: {"longtail": ["8 long-tail keyword ideas real viewers would search"], "tags": ["12 suggested video tags for this topic"]}`
+      ).catch(()=>({longtail:[],tags:[]}))
+    ]);
+    let html = '';
+    html += `<h4 style="font-family:var(--mono);font-size:12px;color:var(--cyan);margin:0 0 6px;">Live YouTube autocomplete</h4>`;
+    html += suggestions.length
+      ? `<div class="chip-row">${suggestions.map(s=>`<span class="pill copyable" onclick="fillOptimizerKeyword('${s.replace(/'/g,"\\'")}')">${s}</span>`).join('')}</div>`
+      : `<div class="hint">Autocomplete didn't return results this time — AI expansion below still works.</div>`;
+    if(aiExpand.longtail && aiExpand.longtail.length){
+      html += `<h4 style="font-family:var(--mono);font-size:12px;color:var(--cyan);margin:14px 0 6px;">AI long-tail ideas</h4><div class="chip-row">${aiExpand.longtail.map(s=>`<span class="pill copyable" onclick="fillOptimizerKeyword('${s.replace(/'/g,"\\'")}')">${s}</span>`).join('')}</div>`;
+    }
+    if(aiExpand.tags && aiExpand.tags.length){
+      html += `<h4 style="font-family:var(--mono);font-size:12px;color:var(--cyan);margin:14px 0 6px;">Suggested tags</h4><div class="chip-row">${aiExpand.tags.map(s=>`<span class="pill copyable" onclick="copyText('${s.replace(/'/g,"\\'")}', this)">${s}</span>`).join('')}</div>`;
+    }
+    document.getElementById('kwResults').innerHTML = html;
+    document.getElementById('kwCompBtn').style.display='inline-block';
+  }catch(e){
+    showMsg('kwMsg', e.message, 'err');
+  }finally{
+    btn.disabled=false; btn.textContent='Research';
+  }
+});
+function fillOptimizerKeyword(s){
+  document.getElementById('optKeyword').value = s;
+  scoreOptimizerLive();
+  goTab('optimizer');
+}
+
+document.getElementById('kwCompBtn').addEventListener('click', async ()=>{
+  if(!lastKeyword || !state.apiKey) return;
+  const el = document.getElementById('kwCompResults');
+  el.innerHTML = '<span class="hint"><span class="spin"></span>Checking who currently ranks (uses ~100+ quota units)...</span>';
+  try{
+    const search = await ytApi(`search?part=snippet&type=video&order=viewCount&maxResults=5&q=${encodeURIComponent(lastKeyword)}`);
+    const chanIds = [...new Set((search.items||[]).map(i=>i.snippet.channelId))];
+    const chanData = chanIds.length ? await ytApi(`channels?part=statistics&id=${chanIds.join(',')}`) : {items:[]};
+    const subMap = {}; (chanData.items||[]).forEach(c=>subMap[c.id]=parseInt(c.statistics.subscriberCount||'0',10));
+    const rows = (search.items||[]).map(i=>{
+      const subs = subMap[i.snippet.channelId]||0;
+      return `<tr><td class="vmeta">${i.snippet.title.slice(0,60)}</td><td class="vmeta">${i.snippet.channelTitle}</td><td class="vmeta">${subs.toLocaleString()} subs</td></tr>`;
+    }).join('');
+    const smallChannelPresent = (search.items||[]).some(i=>(subMap[i.snippet.channelId]||0) < 10000);
+    el.innerHTML = `<table><thead><tr><th>Top ranking video</th><th>Channel</th><th>Size</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="hint" style="margin-top:8px;">${smallChannelPresent ? '✓ Smaller channels are ranking here — this keyword may be reachable.' : 'Mostly large channels ranking — this keyword is competitive, consider a more specific long-tail variant.'}</div>`;
+  }catch(e){
+    el.innerHTML = `<div class="msg show err">${e.message}</div>`;
+  }
+});
+
+let lastTrending = [];
+document.getElementById('trendBtn').addEventListener('click', async ()=>{
+  if(!state.apiKey){ goTab('setup'); return; }
+  hideMsg('trendMsg');
+  const btn = document.getElementById('trendBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Loading...';
+  try{
+    const data = await ytApi(`videos?part=snippet,statistics&chart=mostPopular&regionCode=${state.region}&maxResults=12`);
+    lastTrending = data.items||[];
+    document.getElementById('trendResults').innerHTML = lastTrending.map(v=>`
+      <div class="vtitle" style="margin-bottom:10px;cursor:pointer;" onclick="useTrendAsIdea('${v.snippet.title.replace(/'/g,"\\'")}')">
+        <img src="${(v.snippet.thumbnails&&v.snippet.thumbnails.default||{}).url||''}">
+        <div><div class="tt" style="max-width:280px;">${v.snippet.title}</div><div class="vmeta">${Number(v.statistics.viewCount||0).toLocaleString()} views · ${v.snippet.channelTitle}</div></div>
+      </div>`).join('');
+  }catch(e){
+    showMsg('trendMsg', e.message, 'err');
+  }finally{
+    btn.disabled=false; btn.textContent='Load Trending';
+  }
+});
+let ideaSeed = '';
+function useTrendAsIdea(title){ ideaSeed = title; showMsg('trendMsg', 'Added as inspiration for AI Content Ideas below.', 'ok'); }
+
+document.getElementById('ideasBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('ideasBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Generating...';
+  const niche = state.videos.length ? state.videos.slice(0,12).map(v=>v.title).join(' | ') : 'No channel data yet — general creator';
+  try{
+    const sys = 'You are a YouTube content strategist who suggests specific, filmable video ideas, not vague topics.';
+    const usr = `Channel's recent titles: ${niche}. ${ideaSeed ? 'Trending inspiration: '+ideaSeed : ''}
+Return JSON: {"ideas":[{"title":"...", "angle":"one sentence on why this angle works", "keyword":"target search keyword"}] } with exactly 8 items.`;
+    const result = await askAI(sys, usr);
+    const ideas = result.ideas || [];
+    document.getElementById('ideasResults').innerHTML = ideas.map(i=>`
+      <div class="ai-block">
+        <h4 style="color:var(--cyan);">${i.title}</h4>
+        <div class="hint" style="margin-bottom:6px;">${i.angle||''}</div>
+        <span class="pill">keyword: ${i.keyword||''}</span>
+        <button class="btn ghost small" style="float:right;" onclick="sendIdeaToOptimizer('${(i.title||'').replace(/'/g,"\\'")}','${(i.keyword||'').replace(/'/g,"\\'")}')">Use this idea →</button>
+      </div>`).join('') || '<div class="hint">No ideas returned — try again.</div>';
+  }catch(e){
+    document.getElementById('ideasResults').innerHTML = `<div class="msg show err">${e.message}</div>`;
+  }finally{
+    btn.disabled=false; btn.textContent='Generate 8 Ideas';
+  }
+});
+function sendIdeaToOptimizer(title, keyword){
+  document.getElementById('optTopic').value = title;
+  document.getElementById('optKeyword').value = keyword;
+  document.getElementById('optTitle').value = title;
+  scoreOptimizerLive();
+  goTab('optimizer');
+}
+
+/* ============================================================
+   AUTOPILOT — reads the Tube Forge Agent's live state
+============================================================ */
+function timeAgo(iso){
+  if(!iso) return 'never';
+  const s = Math.floor((Date.now()-new Date(iso).getTime())/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+async function loadAutopilotData(){
+  try{
+    const stateRes = await fetch('data/state.json', {cache:'no-store'});
+    if(!stateRes.ok) throw new Error('no state file');
+    const state = await stateRes.json();
+
+    document.getElementById('apLastRun').textContent = timeAgo(state.lastRun);
+    document.getElementById('apTotalRuns').textContent = state.totalRuns ?? 0;
+    document.getElementById('apTotalApplied').textContent = state.totalUpdatesApplied ?? 0;
+
+    const health = state.agentHealth || {};
+    if(health.sampleSize > 0 && health.successRate !== null){
+      const pct = Math.round(health.successRate*100);
+      const cls = pct>=60?'good':pct>=40?'mid':'low';
+      document.getElementById('apHealth').innerHTML = `
+        <span class="score-badge ${cls}" style="font-size:16px;padding:6px 12px;">${pct}% improved</span>
+        <span class="pill">${health.sampleSize} change${health.sampleSize===1?'':'s'} judged</span>
+        <span class="pill">current threshold: +${health.currentThreshold} ${health.currentThreshold>health.baseThreshold?'(tightened from +'+health.baseThreshold+')':'(base)'}</span>`;
+    } else {
+      document.getElementById('apHealth').innerHTML = `Not enough applied changes judged yet (need a few, each aged 7+ days) — using the base threshold of +${health.baseThreshold ?? '—'} until there's real signal.`;
+    }
+
+    const pending = state.pendingReview || [];
+    document.getElementById('apPending').innerHTML = pending.length ? pending.map(p=>`
+      <div class="ai-block">
+        <div class="hint">Current: "${p.currentTitle}"</div>
+        <div style="color:var(--cyan);font-weight:600;margin:4px 0;">Proposed: "${p.proposedTitle}"</div>
+        <span class="pill">score +${p.scoreDelta}</span>
+        <span class="pill">${p.changePercent}% rewrite</span>
+        <a class="btn ghost small" style="float:right;" href="https://studio.youtube.com/video/${p.videoId}/edit" target="_blank">Open in Studio →</a>
+      </div>`).join('') : 'Nothing pending — all recent changes were small enough to auto-apply, or nothing met the score bar yet.';
+
+    let historyLines = [];
+    try{
+      const histRes = await fetch('data/history.jsonl', {cache:'no-store'});
+      if(histRes.ok){
+        const text = await histRes.text();
+        historyLines = text.trim().split('\n').filter(Boolean).map(l=>JSON.parse(l)).reverse().slice(0,25);
+      }
+    }catch(e){}
+
+    document.getElementById('apHistory').innerHTML = historyLines.length ? historyLines.map(h=>{
+      const cls = h.action==='apply'?'good':h.action==='review'?'mid':h.action==='error'?'low':'mid';
+      return `<div class="ai-block">
+        <span class="score-badge ${cls}" style="margin-right:8px;">${h.action}</span>
+        <b>${h.videoTitle||h.title||h.videoId}</b>
+        <div class="hint">${h.reason||''}</div>
+        <div class="hint" style="color:var(--text-faint);">${timeAgo(h.timestamp)}</div>
+      </div>`;
+    }).join('') : 'No runs logged yet.';
+  }catch(e){
+    document.getElementById('apPending').innerHTML = `<div class="hint">Couldn't load agent data (${e.message}). Make sure this dashboard is served from the same place as the agent's <code>data/</code> folder — e.g. via GitHub Pages on the same repo.</div>`;
+    document.getElementById('apHistory').innerHTML = '';
+  }
+}
+document.querySelector('.tab-btn[data-tab="autopilot"]').addEventListener('click', loadAutopilotData);
+
+/* ============================================================
+   INIT
+============================================================ */
+loadConfig().then(()=>{ scoreOptimizerLive(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+name: Tube Forge Agent
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours — well inside the default 10,000-unit daily YouTube API quota
+  workflow_dispatch: {}      # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm ci
+
+      - name: Run agent
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          CHANNEL_HANDLE: ${{ secrets.CHANNEL_HANDLE }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node src/agent.js
+
+      - name: Commit updated state + log
+        run: |
+          git config user.name "tubeforge-agent"
+          git config user.email "actions@github.com"
+          git add data/state.json data/history.jsonl
+          git diff --cached --quiet || git commit -m "Agent run: $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
