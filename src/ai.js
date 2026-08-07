@@ -146,7 +146,7 @@ async function askAI(systemPrompt, userPrompt) {
   return askPollinations(systemPrompt, userPrompt);
 }
 
-async function generateOptimizedMetadata({ video, niche, audience, brandVoice, trendingTerms, scoreNotes }) {
+async function generateOptimizedMetadata({ video, niche, audience, brandVoice, trendingTerms, scoreNotes, analytics }) {
   const system = [
     `You are a YouTube SEO editor for a channel about: ${niche}.`,
     `Audience: ${audience}. Voice: ${brandVoice}.`,
@@ -154,11 +154,21 @@ async function generateOptimizedMetadata({ video, niche, audience, brandVoice, t
     'You optimize for genuine search relevance and honest click-through, never misleading clickbait (title/thumbnail promises must match the actual content).',
   ].join(' ');
 
+  const analyticsLine = analytics && (analytics.impressionsClickThroughRate !== undefined || analytics.averageViewPercentage !== undefined)
+    ? [
+        'REAL PERFORMANCE DATA (owner-only, last 14 days):',
+        analytics.impressionsClickThroughRate !== undefined ? `- Click-through rate: ${(Number(analytics.impressionsClickThroughRate) * 100).toFixed(1)}% (people who see the thumbnail/title and click)` : null,
+        analytics.averageViewPercentage !== undefined ? `- Average retention: ${Number(analytics.averageViewPercentage).toFixed(0)}% of the video watched on average` : null,
+        'Use this: a LOW click-through rate with GOOD retention means the title/thumbnail undersell strong content — prioritize a more compelling, curiosity-driving (but still honest) title. A GOOD click-through rate with LOW retention means the title is already working — don\'t touch it much, the content/pacing is the issue, which metadata can\'t fix.',
+      ].filter(Boolean).join('\n')
+    : '';
+
   const user = [
     `CURRENT TITLE: ${video.snippet.title}`,
     `CURRENT DESCRIPTION:\n${video.snippet.description || '(empty)'}`,
     `CURRENT TAGS: ${(video.snippet.tags || []).join(', ') || '(none)'}`,
-    `VIEWS: ${video.statistics?.viewCount || 0}  LIKES: ${video.statistics?.likeCount || 0}  COMMENTS: ${video.statistics?.commentCount || 0}`,
+    `PUBLIC STATS — VIEWS: ${video.statistics?.viewCount || 0}  LIKES: ${video.statistics?.likeCount || 0}  COMMENTS: ${video.statistics?.commentCount || 0}`,
+    analyticsLine,
     `KNOWN WEAKNESSES: ${scoreNotes.join(' | ')}`,
     `REAL TRENDING SEARCH PHRASES RELATED TO THIS TOPIC: ${trendingTerms.join(', ') || '(none found)'}`,
     '',
@@ -169,7 +179,7 @@ async function generateOptimizedMetadata({ video, niche, audience, brandVoice, t
     '- tags: 10-15 tags, mix of broad and specific, no duplicates, total under 460 characters combined.',
     '',
     'Respond as JSON: {"title": "...", "description": "...", "tags": ["...", "..."]}',
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 
   const proposal = await askAI(system, user);
 

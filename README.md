@@ -19,6 +19,16 @@ An autonomous metadata-optimization agent for your YouTube channel. On a schedul
 
 This is a different thing from the read-only browser dashboard you had before. That one used an API **key**, which can only *read* public data — it can't change anything on your channel. To actually write metadata, YouTube requires **OAuth** (you, personally, granting the app permission), which is what this agent uses.
 
+## ⚠️ If you already ran `npm run authorize` before: do it again
+
+This update adds a new permission scope (read-access to your Analytics data) — your existing refresh token doesn't have it. Run `npm run authorize` again, re-approve, and update `YT_REFRESH_TOKEN` in both your local `.env` and your GitHub secret.
+
+## What's new in this update
+
+- **Real CTR and retention data**, not just public view counts. The agent now reads your Analytics data (owner-only — click-through rate, average retention) and uses it two ways: it tells the AI *why* a video is underperforming (low CTR + good retention = title problem; good CTR + low retention = content problem, which no title change will fix), and it uses real CTR movement as the primary signal for judging whether a past change actually worked.
+- **Channel-relative outcome judging.** If your whole channel happens to be trending up for unrelated reasons, the agent no longer gives a specific change false credit for it — it compares against how your other videos moved in the same window and isolates the actual effect.
+- **Failure alerting.** If a scheduled run breaks, it now opens a GitHub issue automatically (you'll get a notification) instead of failing silently. It closes itself automatically once a run succeeds again.
+
 ---
 
 ## 1. One-time Google Cloud setup (~5 minutes)

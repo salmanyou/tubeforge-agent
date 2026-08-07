@@ -2,7 +2,10 @@ const { google } = require('googleapis');
 require('dotenv').config();
 
 const REDIRECT_URI = 'http://localhost:8765/oauth2callback';
-const SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl'];
+const SCOPES = [
+  'https://www.googleapis.com/auth/youtube.force-ssl',
+  'https://www.googleapis.com/auth/yt-analytics.readonly', // real CTR / retention — owner-only data
+];
 
 function getOAuthClient() {
   const { YT_CLIENT_ID, YT_CLIENT_SECRET } = process.env;

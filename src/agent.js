@@ -4,10 +4,11 @@ const path = require('path');
 
 const config = require('../config.json');
 const yt = require('./youtube');
+const analytics = require('./analytics');
 const { generateOptimizedMetadata } = require('./ai');
 const { evaluateProposal } = require('./safety');
 const { scoreMetadata } = require('./scorer');
-const { snapshotViews, evaluateOutcomes, computeAdaptiveThreshold } = require('./outcomes');
+const { snapshotViews, recordAnalyticsSnapshot, evaluateOutcomes, computeAdaptiveThreshold } = require('./outcomes');
 const { loadState, saveState, appendHistory } = require('./store');
 
 const DRY_RUN = process.env.DRY_RUN === 'true' || config.automation.dryRun === true;
@@ -45,17 +46,6 @@ async function run() {
   // time series the feedback loop needs, whether or not we touch a video today.
   snapshotViews(state, videos);
 
-  // Score any past changes that are now old enough to judge on real velocity,
-  // then let that adjust how strict we are this run.
-  const newOutcomes = evaluateOutcomes(state, appendHistory);
-  const adaptive = computeAdaptiveThreshold(state, config);
-  if (newOutcomes > 0) console.log(`Scored ${newOutcomes} past change(s) on real view velocity.`);
-  if (adaptive.successRate !== null) {
-    console.log(`Track record: ${Math.round(adaptive.successRate * 100)}% of judged changes improved velocity (n=${adaptive.sampleSize}). Threshold: +${adaptive.threshold} (base +${config.automation.minScoreGainToApply}).\n`);
-  } else {
-    console.log(`Not enough judged changes yet to adapt (n=${adaptive.sampleSize}) — using configured threshold +${adaptive.threshold}.\n`);
-  }
-
   const due = videos.filter(v => {
     const last = state.videos[v.id]?.lastUpdated;
     return daysSince(last) >= config.automation.rateLimitDaysPerVideo;
@@ -68,13 +58,45 @@ async function run() {
   })).sort((a, b) => a.current.overall - b.current.overall);
 
   const batch = scored.slice(0, config.automation.maxVideosPerRun);
+
+  // Fetch real CTR/retention only for videos that actually need it this run —
+  // the ones we're about to consider, plus anything still awaiting an outcome
+  // verdict from a past change (so that judgment has continuous data to work with).
+  const pendingJudgmentIds = Object.entries(state.videos || {})
+    .filter(([, rec]) => (rec.appliedChanges || []).some(c => !c.outcome))
+    .map(([id]) => id);
+  const analyticsIds = [...new Set([...batch.map(b => b.video.id), ...pendingJudgmentIds])];
+  let analyticsMap = {};
+  try {
+    analyticsMap = await analytics.fetchAnalytics(analyticsIds);
+  } catch (e) {
+    console.warn('Analytics fetch failed this run, continuing without it:', e.message);
+  }
+  recordAnalyticsSnapshot(state, analyticsMap);
+
+  // Score any past changes that are now old enough to judge — using real CTR when
+  // we have it, channel-adjusted view velocity otherwise — then let that adjust
+  // how strict we are this run.
+  const newOutcomes = evaluateOutcomes(state, appendHistory);
+  const adaptive = computeAdaptiveThreshold(state, config);
+  if (newOutcomes > 0) console.log(`Scored ${newOutcomes} past change(s) on real outcome data.`);
+  if (adaptive.successRate !== null) {
+    console.log(`Track record: ${Math.round(adaptive.successRate * 100)}% of judged changes improved (n=${adaptive.sampleSize}). Threshold: +${adaptive.threshold} (base +${config.automation.minScoreGainToApply}).\n`);
+  } else {
+    console.log(`Not enough judged changes yet to adapt (n=${adaptive.sampleSize}) — using configured threshold +${adaptive.threshold}.\n`);
+  }
+
   console.log(`${due.length} videos eligible (rate-limit window: ${config.automation.rateLimitDaysPerVideo}d) — processing ${batch.length} this run.\n`);
 
   let appliedCount = 0;
 
   for (const { video, current } of batch) {
     const keyword = firstKeyword(video.snippet.title);
+    const videoAnalytics = analyticsMap[video.id];
     console.log(`→ "${video.snippet.title}"  (current score: ${current.overall}/100)`);
+    if (videoAnalytics?.impressionsClickThroughRate !== undefined) {
+      console.log(`   Real CTR: ${(Number(videoAnalytics.impressionsClickThroughRate) * 100).toFixed(1)}%  Retention: ${Number(videoAnalytics.averageViewPercentage || 0).toFixed(0)}%`);
+    }
 
     let trendingTerms = [];
     try { trendingTerms = await yt.suggestKeywords(keyword); } catch { /* non-fatal */ }
@@ -88,6 +110,7 @@ async function run() {
         brandVoice: config.channel.brandVoice,
         trendingTerms,
         scoreNotes: [...current.titleScore.notes, ...current.tagScore.notes, ...current.descScore.notes],
+        analytics: videoAnalytics,
       });
     } catch (e) {
       console.log(`   ✗ AI generation failed: ${e.message}`);
