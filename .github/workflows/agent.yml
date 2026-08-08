@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   run-agent:
@@ -21,6 +22,8 @@ jobs:
       - run: npm ci
 
       - name: Run agent
+        id: run_agent
+        continue-on-error: true
         env:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
@@ -31,9 +34,43 @@ jobs:
         run: node src/agent.js
 
       - name: Commit updated state + log
+        if: steps.run_agent.outcome == 'success'
         run: |
           git config user.name "tubeforge-agent"
           git config user.email "actions@github.com"
           git add data/state.json data/history.jsonl
           git diff --cached --quiet || git commit -m "Agent run: $(date -u +'%Y-%m-%d %H:%M UTC')"
-          git push
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && break
+            echo "Push attempt $i failed (likely another run pushed first) — retrying..."
+            sleep 5
+          done
+
+      - name: Open/update alert issue on failure
+        if: steps.run_agent.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          EXISTING=$(gh issue list --label agent-failure --state open --json number -q '.[0].number' || true)
+          if [ -z "$EXISTING" ]; then
+            gh issue create --title "Tube Forge Agent run failed" --label agent-failure \
+              --body "A scheduled run failed at $(date -u +'%Y-%m-%d %H:%M UTC'). Log: $RUN_URL"
+          else
+            gh issue comment "$EXISTING" --body "Failed again at $(date -u +'%Y-%m-%d %H:%M UTC'). Log: $RUN_URL"
+          fi
+
+      - name: Close alert issue on recovery
+        if: steps.run_agent.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --label agent-failure --state open --json number -q '.[0].number' || true)
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "Resolved — a subsequent run succeeded."
+            gh issue close "$EXISTING"
+          fi
+
+      - name: Fail the job if the agent run failed
+        if: steps.run_agent.outcome == 'failure'
+        run: exit 1
