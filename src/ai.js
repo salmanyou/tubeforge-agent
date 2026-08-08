@@ -57,8 +57,6 @@ async function askPollinationsPost(systemPrompt, userPrompt, attempt = 1) {
   return parseAIJson(text);
 }
 
-// Fallback path — a plain-text GET endpoint, useful when the chat-style POST
-// endpoint is rate-limited or temporarily down.
 async function askPollinationsGet(systemPrompt, userPrompt) {
   const prompt = `${systemPrompt}\n\n${userPrompt}`;
   const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai`);
@@ -101,31 +99,46 @@ async function askAnthropic(systemPrompt, userPrompt) {
   return parseAIJson(text);
 }
 
-async function askGemini(systemPrompt, userPrompt, modelOverride) {
+async function askGemini(systemPrompt, userPrompt, modelOverride, attempt = 1) {
   const key = process.env.GEMINI_API_KEY;
   const model = modelOverride || process.env.GEMINI_MODEL || 'gemini-3.6-flash';
-  const res = await fetchWithTimeout(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: { responseMimeType: 'application/json' },
-      }),
-    },
-    30000
-  );
-  const data = await res.json().catch(() => null);
+  let res, data;
+  try {
+    res = await fetchWithTimeout(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ parts: [{ text: userPrompt }] }],
+          generationConfig: { responseMimeType: 'application/json' },
+        }),
+      },
+      30000
+    );
+    data = await res.json().catch(() => null);
+  } catch (e) {
+    if (attempt < 3) {
+      await new Promise(r => setTimeout(r, 1000 * attempt));
+      return askGemini(systemPrompt, userPrompt, modelOverride, attempt + 1);
+    }
+    throw new Error(`Gemini network error after ${attempt} attempts: ${e.message}`);
+  }
+
   if (res.status === 404 && !modelOverride) {
-    // Model name went stale (Google renames these fairly often) — self-heal by
-    // trying the floating "latest" alias instead of just failing outright.
     console.warn(`Gemini model "${model}" not found, retrying with gemini-flash-latest...`);
     return askGemini(systemPrompt, userPrompt, 'gemini-flash-latest');
   }
+
+  if ((res.status === 429 || res.status === 503) && attempt < 3) {
+    console.warn(`Gemini returned ${res.status} (transient), retrying (attempt ${attempt + 1})...`);
+    await new Promise(r => setTimeout(r, 1500 * attempt));
+    return askGemini(systemPrompt, userPrompt, modelOverride, attempt + 1);
+  }
+
   if (!res.ok) {
-    throw new Error(`Gemini API error (HTTP ${res.status}): ${JSON.stringify(data).slice(0, 300)}`);
+    throw new Error(`Gemini API error (HTTP ${res.status}) after ${attempt} attempt(s): ${JSON.stringify(data).slice(0, 300)}`);
   }
   const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('\n');
   if (!text) {
